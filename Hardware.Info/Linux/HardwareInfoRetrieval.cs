@@ -18,6 +18,8 @@ namespace Hardware.Info.Linux
 
         private readonly OS _os = new OS();
 
+        public bool IsWine { get; set; }
+
         public OS GetOperatingSystem()
         {
             string[] lines = TryReadLinesFromFile("/etc/os-release");
@@ -36,6 +38,11 @@ namespace Hardware.Info.Linux
                     if (Version.TryParse(_os.VersionString, out Version version))
                         _os.Version = version;
                 }
+            }
+            
+            if (IsWine)
+            {
+                _os.Name = _os.Name + " (wine)";
             }
 
             return _os;

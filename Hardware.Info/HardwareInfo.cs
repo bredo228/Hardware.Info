@@ -97,11 +97,16 @@ namespace Hardware.Info
         /// <param name="timeoutInWMI">sets the Timeout property of the EnumerationOptions in the ManagementObjectSearcher that executes the query. The default value is EnumerationOptions.InfiniteTimeout</param>
         public HardwareInfo(bool useAsteriskInWMI = true, TimeSpan? timeoutInWMI = null)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // Environment.OSVersion.Platform == PlatformID.Win32NT)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !IsWine()) // Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
                 _hardwareInfoRetrieval = new Hardware.Info.Windows.HardwareInfoRetrieval(timeoutInWMI) { UseAsteriskInWMI = useAsteriskInWMI };
             }
 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && IsWine())
+            {
+                _hardwareInfoRetrieval = new Hardware.Info.Linux.HardwareInfoRetrieval() { IsWine = true };
+            }
+            
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) // Environment.OSVersion.Platform == PlatformID.MacOSX)
             {
                 _hardwareInfoRetrieval = new Hardware.Info.Mac.HardwareInfoRetrieval();
@@ -109,10 +114,26 @@ namespace Hardware.Info
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) // Environment.OSVersion.Platform == PlatformID.Unix)
             {
-                _hardwareInfoRetrieval = new Hardware.Info.Linux.HardwareInfoRetrieval();
+                _hardwareInfoRetrieval = new Hardware.Info.Linux.HardwareInfoRetrieval() { IsWine = false };
             }
         }
 
+        [DllImport("ntdll.dll", EntryPoint = "wine_get_version")]
+        private static extern string GetWineVersion();
+
+        private static bool IsWine()
+        {
+            try
+            {
+                string wineVersion = GetWineVersion();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        
         /// <summary>
         /// Refresh all hardware info
         /// </summary>
